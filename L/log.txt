@@ -1,0 +1,3 @@
+Flag: b
+Input: a
+Output: c

@@ -29,4 +29,5 @@ Run the program:
 - Support for 4-channel images (RGBA)
 - Additional filter options
 - SIMD optimizations for faster processing
+- GUI integration for convenience
 

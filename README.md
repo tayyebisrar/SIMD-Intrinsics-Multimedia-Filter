@@ -14,7 +14,7 @@ This project implements image filtering operations using C/C++, with a focus on 
 ## Usage
 Compile the program:
 ```sh
-g++ -o filter main.cpp -w
+g++ -o filter main.cpp helpers.cpp -w
 ```
 Run the program:
 ```sh

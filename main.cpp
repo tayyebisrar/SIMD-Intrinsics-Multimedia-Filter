@@ -3,11 +3,11 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include "bmp.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "lib/stb/stb_image_write.h"
+#include "helpers.h"
 
 IMAGE_DATA loadInterleavedImage(std::string infile);
 int writeInterleavedImage(std::string outfile, IMAGE_DATA out_image);
@@ -49,6 +49,19 @@ int main(int argc, char* argv[])
         }
     }while (x >= 0 && x < in_image.width * in_image.height);
 
+    switch (flag) {
+        case 'b':
+            // filter_blur_basic(in_image);
+            break;
+        case 'e':
+            // filter_edge_basic(in_image);
+            break;
+        case 'g':
+            filter_grayscale_basic(in_image);
+            break;
+        default:
+            break;
+    }
     std::cout << "Successfully wrote to file with return code " << writeInterleavedImage(outfile, in_image) << std::endl;
     return 0;
 }

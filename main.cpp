@@ -5,9 +5,9 @@
 #include <vector>
 #include "bmp.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb/stb_image.h"
+#include "lib/stb/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../lib/stb/stb_image_write.h"
+#include "lib/stb/stb_image_write.h"
 
 IMAGE_DATA loadInterleavedImage(std::string infile);
 int writeInterleavedImage(std::string outfile, IMAGE_DATA out_image);
@@ -23,8 +23,7 @@ int main(int argc, char* argv[])
     std::string infile = argv[2];
     std::string outfile = argv[3];
     char flag = argv[1][0];
-    if (!(flag == 'b' || flag == 'e' || flag == 'g' || flag == 'r'))
-    {
+    if (!(flag == 'b' || flag == 'e' || flag == 'g')){
         std::cerr << "Invalid filter." << std::endl;
         return 2;
     }
@@ -50,7 +49,7 @@ int main(int argc, char* argv[])
         }
     }while (x >= 0 && x < in_image.width * in_image.height);
 
-    std::cout << "Wrote to file with return code " << writeInterleavedImage(outfile, in_image) << std::endl;
+    std::cout << "Successfully wrote to file with return code " << writeInterleavedImage(outfile, in_image) << std::endl;
     return 0;
 }
 

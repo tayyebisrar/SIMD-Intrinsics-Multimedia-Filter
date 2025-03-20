@@ -30,4 +30,4 @@ Run the program:
 - Additional filter options
 - SIMD optimizations for faster processing
 - GUI integration for convenience
-
+- Sound and other photo formats, and later video filtering

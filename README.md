@@ -18,6 +18,10 @@ Compile the program:
 ```sh
 make
 ```
+or, if make is not available:
+```sh
+g++ -Iinclude -o filter src/main.cpp src/helpers.cpp -w
+```
 Run the program:
 ```sh
 ./filter [flag] <input.bmp> <output.bmp>

@@ -2,9 +2,9 @@
 #include <vector>
 #include "helpers.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "lib/stb/stb_image.h"
+#include "../lib/stb/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "lib/stb/stb_image_write.h"
+#include "../lib/stb/stb_image_write.h"
 
 IMAGE_DATA loadInterleavedImage(std::string infile){
     IMAGE_DATA in_image;

@@ -4,3 +4,6 @@
 
 # Allow .bmp files in subdirectories
 !*/**/*.bmp
+
+filter.exe
+*.o

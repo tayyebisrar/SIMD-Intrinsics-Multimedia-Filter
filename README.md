@@ -2,6 +2,8 @@
 
 This project implements image filtering operations using C/C++, with a focus on efficient pixel manipulation and future integration of SIMD optimizations. It utilizes the **stb_image** and **stb_image_write** libraries from nothings/stb for reading and writing BMP images, while storing pixel data in a structured format for easier processing.
 
+Test image(s) can be found in lib/images
+
 ## Features
 - Loads BMP images and extracts RGB channels separately.
 - Supports basic filtering operations (e.g., brightness, edge detection, grayscale, etc.).
@@ -14,7 +16,7 @@ This project implements image filtering operations using C/C++, with a focus on 
 ## Usage
 Compile the program:
 ```sh
-g++ -o filter main.cpp helpers.cpp -w
+make
 ```
 Run the program:
 ```sh

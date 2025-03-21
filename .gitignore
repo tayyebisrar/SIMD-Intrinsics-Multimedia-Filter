@@ -1,3 +1,6 @@
 .DS_Store
-bmp.h
-out.bmp
+# Ignore .bmp files in the main directory
+/*.bmp
+
+# Allow .bmp files in subdirectories
+!*/**/*.bmp

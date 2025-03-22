@@ -4,9 +4,22 @@
 #include <fstream>
 #include <vector>
 #include "helpers.h"
+#include "defaultf.h"
+#if defined(__AVX2__)
+    #define instrset "AVX2"
+    #include "avx2f.h"
+#elif defined(__SSE2__)
+    #define instrset "SSE2"
+    #include "sse2f.h"
+#elif defined(__ARM_NEON)
+    #define instrset "NEON"
+    #include "neonf.h"
+#else
+    #define instrset "none"
+#endif
 
 int main(int argc, char* argv[])
-{
+{  
     if (argc != 4)
     {
         std::cerr << "Usage: ./filter [flag] infile outfile" << std::endl;
@@ -42,19 +55,26 @@ int main(int argc, char* argv[])
         }
     }while (x >= 0 && x < in_image.width * in_image.height);
 
+    
     switch (flag) {
         case 'b':
+            //if (instrset == "Default"){}else{}
             // filter_blur_basic(in_image);
             break;
         case 'e':
             // filter_edge_basic(in_image);
             break;
         case 'g':
-            filter_grayscale_basic(in_image);
+            if (std::string(instrset) == "none"){
+                filter_grayscale_basic(in_image);
+            }
+            else {
+                filter_grayscale(in_image);
+            }
             break;
         default:
             break;
     }
-    std::cout << "Successfully wrote to file with return code " << writeInterleavedImage(outfile, in_image) << std::endl;
+    std::cout << "Successfully wrote to file with return code " << writeInterleavedImage(outfile, in_image) << " using " << std::string(instrset) << " intrinsics " << std::endl;
     return 0;
 }

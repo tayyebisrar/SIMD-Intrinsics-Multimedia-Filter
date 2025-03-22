@@ -1,9 +1,10 @@
 .DS_Store
 # Ignore .bmp files in the main directory
 /*.bmp
-
 # Allow .bmp files in subdirectories
 !*/**/*.bmp
 
 filter.exe
 *.o
+METAREADME.md
+METAMakefile

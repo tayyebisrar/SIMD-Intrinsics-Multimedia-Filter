@@ -2,8 +2,8 @@
 #include <vector>
 #include "helpers.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "../lib/stb/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../lib/stb/stb_image.h"
 #include "../lib/stb/stb_image_write.h"
 
 IMAGE_DATA loadInterleavedImage(std::string infile){
@@ -44,14 +44,4 @@ int writeInterleavedImage(std::string outfile, IMAGE_DATA out_image){
         data.push_back(out_image.blue[i]);
     }
     return stbi_write_bmp(outfile.c_str(), out_image.width, out_image.height, 3, data.data());
-}
-
-void filter_grayscale_basic(IMAGE_DATA &image){
-    // method for grayscale
-    for (int i = 0; i < image.width * image.height; i++){
-        BYTE gray = (image.red[i] + image.green[i] + image.blue[i]) / 3;
-        image.red[i] = gray;
-        image.green[i] = gray;
-        image.blue[i] = gray;
-    }
 }

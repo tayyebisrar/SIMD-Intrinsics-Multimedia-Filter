@@ -7,7 +7,7 @@ Test image(s) can be found in lib/images
 **NOTE** - If you open the files with intrinsics for an architecture your computer _doesn't_ support, it may highlight it as an error/squiggle
 in some code editors/IDEs. If you prefer not to see these errors/squiggles, you can delete the files that don't
 match your architecture.
-In either case, the code should still compile.
+In either case, the code should still compile, as this is simply visual.
 
 ## Features
 - Loads BMP images and extracts RGB channels separately.
@@ -24,18 +24,15 @@ To compile (default):
 ```sh
 make
 ```
-To compile (ARM ARMv7-A):
-```sh
-make use_neon=1
-```
 ### Manual Compilation
-Similar to Makefile, run:
+Similar to Makefile,
+On x86, run:
 ```sh
 g++ -Iinclude -o filter src/main.cpp src/helpers.cpp src/defaultf.cpp src/sse2f.cpp -w
 ```
-On ARMv7-A, run:
+On ARM, run:
 ```sh
-g++ -Iinclude -o filter src/main.cpp src/helpers.cpp src/defaultf.cpp src/sse2f.cpp -w -mfpu=neon
+g++ -Iinclude -o filter src/main.cpp src/helpers.cpp src/defaultf.cpp -w -mfpu=neon
 ```
 ### Running
 Run the program:

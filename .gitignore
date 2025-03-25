@@ -3,8 +3,8 @@
 /*.bmp
 # Allow .bmp files in subdirectories
 !*/**/*.bmp
-
-filter.exe
+obj/
+*.exe
 *.o
 METAREADME.md
 METAMakefile

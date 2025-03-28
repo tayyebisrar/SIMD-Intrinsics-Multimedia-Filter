@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <chrono>
 #include "helpers.h"
 #include "defaultf.h"
 #if defined(__AVX2__)

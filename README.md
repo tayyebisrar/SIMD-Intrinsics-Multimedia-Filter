@@ -14,6 +14,16 @@ In either case, the code should still compile, as this is simply visual.
 - Supports basic filtering operations (e.g., brightness, edge detection, grayscale, etc.).
 - Outputs filtered images as BMP files.
 
+## Benchmarks
+For 100,000 iterations of grayscaled charizard.bmp:
+(found in lib/benchmarks.txt)
+
+| Intrinsics        | Average Elapsed Time (seconds)| Speedup (vs Default)  |
+|-------------------|-------------------------------|-----------------------|
+| Default           | 81.82                         | 1.00x                 |
+| SSE2              | 21.63                         | 3.78x                 |
+| AVX2              | 11.67                         | 7.02x                 |
+
 ## Dependencies
 - C++17 or later
 - x86 processor with SSE/AVX2, or ARM processor with NEON
@@ -52,3 +62,4 @@ Work In Progress flags:
 - GUI integration for convenience
 - Sound and other photo formats, and later video filtering
 - Implementation of AVX2 and NEON
+- Add CMake configuration

@@ -1,0 +1,22 @@
+Charizard Grayscale (100,000 iterations)
+
+Elapsed time: 21.5874 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
+Elapsed time: 21.6835 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
+Elapsed time: 21.6312 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics 
+
+Elapsed time: 11.6869 seconds
+Successfully wrote to file with return code 1 using AVX2 intrinsics
+Elapsed time: 11.6300 seconds
+Successfully wrote to file with return code 1 using AVX2 intrinsics
+Elapsed time: 11.6926 seconds
+Successfully wrote to file with return code 1 using AVX2 intrinsics
+
+Elapsed time: 81.8075 seconds
+Successfully wrote to file with return code 1 using default intrinsics
+Elapsed time: 81.6916 seconds
+Successfully wrote to file with return code 1 using default intrinsics
+Elapsed time: 81.9533 seconds
+Successfully wrote to file with return code 1 using default intrinsics

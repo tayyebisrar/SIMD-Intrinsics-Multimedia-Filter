@@ -6,7 +6,13 @@ INCLUDE_DIR = include
 SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/helpers.cpp $(SRC_DIR)/defaultf.cpp
 OBJ_DIR = obj
 ARCH := $(shell uname -m)
+use_avx2 ?= 0
 ifeq ($(findstring 86, $(ARCH)), 86)
+	ifeq (use_avx2, 1)
+	@echo "Using AVX2"
+	SRCS+= $(SRC_DIR)/avx2f.cpp
+	FLAGS += -mavx2
+	endif
 	SRCS += $(SRC_DIR)/sse2f.cpp
 	FLAGS += -msse2
 else ifeq ($(findstring arm, $(ARCH)), arm)

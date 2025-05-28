@@ -3,7 +3,7 @@
 /*.bmp
 # Allow .bmp files in subdirectories
 !*/**/*.bmp
-obj/
+/obj/
 *.exe
 *.o
 METAREADME.md

@@ -33,4 +33,5 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 clean:
 	rm -f $(TARGET) $(OBJS)
+	rm -f $(OBJ_DIR)/avx2f.o
 	@echo "Cleaned up build files."

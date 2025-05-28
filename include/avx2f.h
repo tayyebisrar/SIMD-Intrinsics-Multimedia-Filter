@@ -4,5 +4,6 @@
 #include "bmpstruct.h"
 
 void filter_grayscale(IMAGE_DATA &image);
+void filter_blur(IMAGE_DATA &image);
 
 #endif

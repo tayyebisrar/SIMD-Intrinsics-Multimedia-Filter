@@ -59,8 +59,17 @@ int main(int argc, char* argv[])
     
     switch (flag) {
         case 'b':
-            //if (instrset == "Default"){}else{}
-            // filter_blur_basic(in_image);
+            if (std::string(instrset) == "none"){
+                filter_blur_basic(in_image);
+            }
+            else {
+                if (std::string(instrset) == "AVX2"){
+                    filter_blur(in_image);
+                }
+                else{
+                    filter_blur_basic(in_image);
+                }
+            }
             break;
         case 'e':
             // filter_edge_basic(in_image);

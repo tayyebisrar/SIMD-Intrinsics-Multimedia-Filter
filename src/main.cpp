@@ -45,18 +45,6 @@ int main(int argc, char* argv[])
         return 3;
     }
     
-    int x = 0;
-    do{
-        printf("Pixel: ");
-        scanf("%d", &x);
-        if (x >= 0 && x < in_image.width * in_image.height){
-            printf("Red: %d\n", in_image.red[x]);
-            printf("Green: %d\n", in_image.green[x]);
-            printf("Blue: %d\n", in_image.blue[x]);
-        }
-    }while (x >= 0 && x < in_image.width * in_image.height);
-
-    
     switch (flag) {
         case 'b':
             if (std::string(instrset) == "none"){

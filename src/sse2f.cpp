@@ -54,3 +54,35 @@ void filter_grayscale(IMAGE_DATA &image){
         image.blue[i] = gray;
     }
 }
+
+void filter_blur(IMAGE_DATA &image){
+    // this is just here to stop the main function from crashing because there wasn't a blur function defined - will add later
+    const int box_radius = 8;
+    // simple 3x3 box blur filter
+    int r_sum, g_sum, b_sum, count;
+    for (int i = 0; i < image.width * image.height; i++){
+        r_sum = 0;
+        g_sum = 0;
+        b_sum = 0;
+        count = 0;
+
+        // check for 3x3 box around the pixel. In a 2d array, this is done by subtracting and adding 1 to the current pixel and checking if it's in the bounds.
+        // However, since this is now a 1d array, we check the index of the pixel, and the pixel subtract and add 1, and then also the pixel subtract and add the width of the image, along with the pairs pixels next to them..
+        // If it is in bounds, add the pixel to the sum and increment the count. If not, skip it. 
+        for (int j = -box_radius; j <= box_radius; j++){
+            for (int k = -box_radius; k <= box_radius; k++){
+                int x = i + j * image.width + k; // current pixel + row offset + column offset
+                if (x >= 0 && x < image.width * image.height){
+                    r_sum += image.red[x];
+                    g_sum += image.green[x];
+                    b_sum += image.blue[x];
+                    count++;
+                }
+            }
+        }
+
+        image.red[i] = ((r_sum / count) % 255);
+        image.green[i] = ((g_sum / count) % 255);
+        image.blue[i] = ((b_sum / count) % 255);
+    }
+}

@@ -11,7 +11,8 @@ void filter_grayscale(IMAGE_DATA &image){
     const __m256i red_multiplier = _mm256_set1_epi16(77);
     const __m256i green_multiplier = _mm256_set1_epi16(77);
     const __m256i blue_multiplier = _mm256_set1_epi16(77);
-
+    const __m256i simdzero = _mm256_setzero_si256();
+    
     for (int i = 0; i < totalloops; i++) {
         // Load 32 pixels at a time
         __m256i red16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i * 32));
@@ -19,12 +20,12 @@ void filter_grayscale(IMAGE_DATA &image){
         __m256i blue16 = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i * 32));
 
         // Unpack 8-bit integers to 16-bit integers
-        __m256i red16l = _mm256_unpacklo_epi8(red16, _mm256_setzero_si256());
-        __m256i green16l = _mm256_unpacklo_epi8(green16, _mm256_setzero_si256());
-        __m256i blue16l = _mm256_unpacklo_epi8(blue16, _mm256_setzero_si256());
-        __m256i red16h = _mm256_unpackhi_epi8(red16, _mm256_setzero_si256());
-        __m256i green16h = _mm256_unpackhi_epi8(green16, _mm256_setzero_si256());
-        __m256i blue16h = _mm256_unpackhi_epi8(blue16, _mm256_setzero_si256());
+        __m256i red16l = _mm256_unpacklo_epi8(red16, simdzero);
+        __m256i green16l = _mm256_unpacklo_epi8(green16, simdzero);
+        __m256i blue16l = _mm256_unpacklo_epi8(blue16, simdzero);
+        __m256i red16h = _mm256_unpackhi_epi8(red16, simdzero);
+        __m256i green16h = _mm256_unpackhi_epi8(green16, simdzero);
+        __m256i blue16h = _mm256_unpackhi_epi8(blue16, simdzero);
 
         // Compute grayscale values
         __m256i gray16l = _mm256_add_epi16(
@@ -89,10 +90,220 @@ void filter_blur(IMAGE_DATA &image){
     // we can then do the edge parts separately
 
     IMAGE_DATA temporary_image = image;
-    // __m256i r_sum, g_sum, b_sum; // don't need a count since it's always 9 when in range when doing SIMD part
 
-    int c = 0, sr_sum = 0, sg_sum = 0, sb_sum = 0;
+    const __m256i div9_magicnumber = _mm256_set1_epi16(7282);
+    const __m256i simdzero = _mm256_setzero_si256();
     
+    int i=image.width+1; // start at image index [1, 1] (from idx [0, 0])
+    while (i < (image.width*(image.height-1))-1) // end at image index [width-2, height-2] (from idx [width-1, height-1])
+    {
+        int col = i % image.width;
+        // int row = i / image.width; unused
+        
+        if (col == 0 || col == image.width - 1) {
+            i++;
+            continue; // skip the first and last column
+        }
+
+        if ((col + 32) > (image.width)) {
+            // if the next 32 pixels would cross the row boundary, need to process the rest in scalar code
+            // was going to use col + 33 (or col + 32 > image.width - 1) to stop it also doing the final column, but we can do it
+            // and then overwrite it later, potentially increasing performance
+            
+            for (int j = col; j < image.width - 1; j++) { // can skip the last column here, though. Makes no difference
+                blur_pixel(image, temporary_image, i - col + j); // call the blur pixel function to do the blur
+            }
+            i += (image.width - col); // move to the next row
+            continue; // go from the top to ensure the next row is processed correctly
+        }
+
+        // Process 32 pixels at a time
+        // Find the average of a 3x3 box around each pixel in the 32-pixel block
+
+        
+        __m256i top_left_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - image.width - 1));
+        __m256i top_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - image.width));
+        __m256i top_right_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - image.width + 1));
+        __m256i left_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - 1));
+        __m256i center_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i));
+        __m256i right_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + 1));
+        __m256i bottom_left_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + image.width - 1));
+        __m256i bottom_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + image.width));
+        __m256i bottom_right_r = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + image.width + 1));
+
+        // Unpack the 8-bit integers to 16-bit integers to prevent overflow (adding 9 pixels easily exceeds 255)
+
+        __m256i top_left_r_16_lo = _mm256_unpacklo_epi8(top_left_r, simdzero);
+        __m256i top_r_16_lo = _mm256_unpacklo_epi8(top_r, simdzero);
+        __m256i top_right_r_16_lo = _mm256_unpacklo_epi8(top_right_r, simdzero);
+        __m256i left_r_16_lo = _mm256_unpacklo_epi8(left_r, simdzero);
+        __m256i center_r_16_lo = _mm256_unpacklo_epi8(center_r, simdzero);
+        __m256i right_r_16_lo = _mm256_unpacklo_epi8(right_r, simdzero);
+        __m256i bottom_left_r_16_lo = _mm256_unpacklo_epi8(bottom_left_r, simdzero);
+        __m256i bottom_r_16_lo = _mm256_unpacklo_epi8(bottom_r, simdzero);
+        __m256i bottom_right_r_16_lo = _mm256_unpacklo_epi8(bottom_right_r, simdzero);
+        __m256i top_left_r_16_hi = _mm256_unpackhi_epi8(top_left_r, simdzero);
+        __m256i top_r_16_hi = _mm256_unpackhi_epi8(top_r, simdzero);
+        __m256i top_right_r_16_hi = _mm256_unpackhi_epi8(top_right_r, simdzero);
+        __m256i left_r_16_hi = _mm256_unpackhi_epi8(left_r, simdzero);
+        __m256i center_r_16_hi = _mm256_unpackhi_epi8(center_r, simdzero);
+        __m256i right_r_16_hi = _mm256_unpackhi_epi8(right_r, simdzero);
+        __m256i bottom_left_r_16_hi = _mm256_unpackhi_epi8(bottom_left_r, simdzero);
+        __m256i bottom_r_16_hi = _mm256_unpackhi_epi8(bottom_r, simdzero);
+        __m256i bottom_right_r_16_hi = _mm256_unpackhi_epi8(bottom_right_r, simdzero);
+
+        // Now we can sum the 16-bit integers together
+        __m256i r_sum_lo = _mm256_add_epi16(top_left_r_16_lo, top_r_16_lo);
+        r_sum_lo = _mm256_add_epi16(r_sum_lo, top_right_r_16_lo);
+        r_sum_lo = _mm256_add_epi16(r_sum_lo, left_r_16_lo);
+        r_sum_lo = _mm256_add_epi16(r_sum_lo, center_r_16_lo);
+        r_sum_lo = _mm256_add_epi16(r_sum_lo, right_r_16_lo);
+        r_sum_lo = _mm256_add_epi16(r_sum_lo, bottom_left_r_16_lo);
+        r_sum_lo = _mm256_add_epi16(r_sum_lo, bottom_r_16_lo);
+        r_sum_lo = _mm256_add_epi16(r_sum_lo, bottom_right_r_16_lo);
+        __m256i r_sum_hi = _mm256_add_epi16(top_left_r_16_hi, top_r_16_hi);
+        r_sum_hi = _mm256_add_epi16(r_sum_hi, top_right_r_16_hi);
+        r_sum_hi = _mm256_add_epi16(r_sum_hi, left_r_16_hi);
+        r_sum_hi = _mm256_add_epi16(r_sum_hi, center_r_16_hi);
+        r_sum_hi = _mm256_add_epi16(r_sum_hi, right_r_16_hi);
+        r_sum_hi = _mm256_add_epi16(r_sum_hi, bottom_left_r_16_hi);
+        r_sum_hi = _mm256_add_epi16(r_sum_hi, bottom_r_16_hi);
+        r_sum_hi = _mm256_add_epi16(r_sum_hi, bottom_right_r_16_hi);
+
+        // Divide by 9 by approximating using the value 2^16 / 9 and then shifting 16
+
+        __m256i r_avg_lo = _mm256_mulhi_epu16(r_sum_lo, div9_magicnumber); // 7282 is 2^16/9
+        __m256i r_avg_hi = _mm256_mulhi_epu16(r_sum_hi, div9_magicnumber);
+        
+        // Pack the 16-bit integers back to 8-bit integers AND shift down by 16 bits
+
+        __m256i r_avg =_mm256_packus_epi16(r_avg_lo, r_avg_hi);
+
+        __m256i top_left_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - image.width - 1));
+        __m256i top_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - image.width));
+        __m256i top_right_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - image.width + 1));
+        __m256i left_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - 1));
+        __m256i center_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i));
+        __m256i right_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + 1));
+        __m256i bottom_left_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + image.width - 1));
+        __m256i bottom_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + image.width));
+        __m256i bottom_right_g = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + image.width + 1));
+
+        // Unpack the 8-bit integers to 16-bit integers to prevent overflow (adding 9 pixels easily exceeds 255)
+
+        __m256i top_left_g_16_lo = _mm256_unpacklo_epi8(top_left_g, simdzero);
+        __m256i top_g_16_lo = _mm256_unpacklo_epi8(top_g, simdzero);
+        __m256i top_right_g_16_lo = _mm256_unpacklo_epi8(top_right_g, simdzero);
+        __m256i left_g_16_lo = _mm256_unpacklo_epi8(left_g, simdzero);
+        __m256i center_g_16_lo = _mm256_unpacklo_epi8(center_g, simdzero);
+        __m256i right_g_16_lo = _mm256_unpacklo_epi8(right_g, simdzero);
+        __m256i bottom_left_g_16_lo = _mm256_unpacklo_epi8(bottom_left_g, simdzero);
+        __m256i bottom_g_16_lo = _mm256_unpacklo_epi8(bottom_g, simdzero);
+        __m256i bottom_right_g_16_lo = _mm256_unpacklo_epi8(bottom_right_g, simdzero);
+        __m256i top_left_g_16_hi = _mm256_unpackhi_epi8(top_left_g, simdzero);
+        __m256i top_g_16_hi = _mm256_unpackhi_epi8(top_g, simdzero);
+        __m256i top_right_g_16_hi = _mm256_unpackhi_epi8(top_right_g, simdzero);
+        __m256i left_g_16_hi = _mm256_unpackhi_epi8(left_g, simdzero);
+        __m256i center_g_16_hi = _mm256_unpackhi_epi8(center_g, simdzero);
+        __m256i right_g_16_hi = _mm256_unpackhi_epi8(right_g, simdzero);
+        __m256i bottom_left_g_16_hi = _mm256_unpackhi_epi8(bottom_left_g, simdzero);
+        __m256i bottom_g_16_hi = _mm256_unpackhi_epi8(bottom_g, simdzero);
+        __m256i bottom_right_g_16_hi = _mm256_unpackhi_epi8(bottom_right_g, simdzero);
+
+        // Now we can sum the 16-bit integers together
+        __m256i g_sum_lo = _mm256_add_epi16(top_left_g_16_lo, top_g_16_lo);
+        g_sum_lo = _mm256_add_epi16(g_sum_lo, top_right_g_16_lo);
+        g_sum_lo = _mm256_add_epi16(g_sum_lo, left_g_16_lo);
+        g_sum_lo = _mm256_add_epi16(g_sum_lo, center_g_16_lo);
+        g_sum_lo = _mm256_add_epi16(g_sum_lo, right_g_16_lo);
+        g_sum_lo = _mm256_add_epi16(g_sum_lo, bottom_left_g_16_lo);
+        g_sum_lo = _mm256_add_epi16(g_sum_lo, bottom_g_16_lo);
+        g_sum_lo = _mm256_add_epi16(g_sum_lo, bottom_right_g_16_lo);
+        __m256i g_sum_hi = _mm256_add_epi16(top_left_g_16_hi, top_g_16_hi);
+        g_sum_hi = _mm256_add_epi16(g_sum_hi, top_right_g_16_hi);
+        g_sum_hi = _mm256_add_epi16(g_sum_hi, left_g_16_hi);
+        g_sum_hi = _mm256_add_epi16(g_sum_hi, center_g_16_hi);
+        g_sum_hi = _mm256_add_epi16(g_sum_hi, right_g_16_hi);
+        g_sum_hi = _mm256_add_epi16(g_sum_hi, bottom_left_g_16_hi);
+        g_sum_hi = _mm256_add_epi16(g_sum_hi, bottom_g_16_hi);
+        g_sum_hi = _mm256_add_epi16(g_sum_hi, bottom_right_g_16_hi);
+
+        // Divide by 9 by approximating using the value 2^16 / 9 and then shifting 16
+
+        __m256i g_avg_lo = _mm256_mulhi_epu16(g_sum_lo, div9_magicnumber); // 7282 is 2^16/9
+        __m256i g_avg_hi = _mm256_mulhi_epu16(g_sum_hi, div9_magicnumber);
+
+        // Pack the 16-bit integers back to 8-bit integers AND shift down by 16 bits
+
+        __m256i g_avg =_mm256_packus_epi16(g_avg_lo, g_avg_hi);
+
+        __m256i top_left_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - image.width - 1));
+        __m256i top_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - image.width));
+        __m256i top_right_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - image.width + 1));
+        __m256i left_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - 1));
+        __m256i center_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i));
+        __m256i right_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + 1));
+        __m256i bottom_left_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + image.width - 1));
+        __m256i bottom_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + image.width));
+        __m256i bottom_right_b = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + image.width + 1));
+
+        // Unpack the 8-bit integers to 16-bit integers to prevent overflow (adding 9 pixels easily exceeds 255)
+
+        __m256i top_left_b_16_lo = _mm256_unpacklo_epi8(top_left_b, simdzero);
+        __m256i top_b_16_lo = _mm256_unpacklo_epi8(top_b, simdzero);
+        __m256i top_right_b_16_lo = _mm256_unpacklo_epi8(top_right_b, simdzero);
+        __m256i left_b_16_lo = _mm256_unpacklo_epi8(left_b, simdzero);
+        __m256i center_b_16_lo = _mm256_unpacklo_epi8(center_b, simdzero);
+        __m256i right_b_16_lo = _mm256_unpacklo_epi8(right_b, simdzero);
+        __m256i bottom_left_b_16_lo = _mm256_unpacklo_epi8(bottom_left_b, simdzero);
+        __m256i bottom_b_16_lo = _mm256_unpacklo_epi8(bottom_b, simdzero);
+        __m256i bottom_right_b_16_lo = _mm256_unpacklo_epi8(bottom_right_b, simdzero);
+        __m256i top_left_b_16_hi = _mm256_unpackhi_epi8(top_left_b, simdzero);
+        __m256i top_b_16_hi = _mm256_unpackhi_epi8(top_b, simdzero);
+        __m256i top_right_b_16_hi = _mm256_unpackhi_epi8(top_right_b, simdzero);
+        __m256i left_b_16_hi = _mm256_unpackhi_epi8(left_b, simdzero);
+        __m256i center_b_16_hi = _mm256_unpackhi_epi8(center_b, simdzero);
+        __m256i right_b_16_hi = _mm256_unpackhi_epi8(right_b, simdzero);
+        __m256i bottom_left_b_16_hi = _mm256_unpackhi_epi8(bottom_left_b, simdzero);
+        __m256i bottom_b_16_hi = _mm256_unpackhi_epi8(bottom_b, simdzero);
+        __m256i bottom_right_b_16_hi = _mm256_unpackhi_epi8(bottom_right_b, simdzero);
+
+        // Now we can sum the 16-bit integers together
+        __m256i b_sum_lo = _mm256_add_epi16(top_left_b_16_lo, top_b_16_lo);
+        b_sum_lo = _mm256_add_epi16(b_sum_lo, top_right_b_16_lo);
+        b_sum_lo = _mm256_add_epi16(b_sum_lo, left_b_16_lo);
+        b_sum_lo = _mm256_add_epi16(b_sum_lo, center_b_16_lo);
+        b_sum_lo = _mm256_add_epi16(b_sum_lo, right_b_16_lo);
+        b_sum_lo = _mm256_add_epi16(b_sum_lo, bottom_left_b_16_lo);
+        b_sum_lo = _mm256_add_epi16(b_sum_lo, bottom_b_16_lo);
+        b_sum_lo = _mm256_add_epi16(b_sum_lo, bottom_right_b_16_lo);
+        __m256i b_sum_hi = _mm256_add_epi16(top_left_b_16_hi, top_b_16_hi);
+        b_sum_hi = _mm256_add_epi16(b_sum_hi, top_right_b_16_hi);
+        b_sum_hi = _mm256_add_epi16(b_sum_hi, left_b_16_hi);
+        b_sum_hi = _mm256_add_epi16(b_sum_hi, center_b_16_hi);
+        b_sum_hi = _mm256_add_epi16(b_sum_hi, right_b_16_hi);
+        b_sum_hi = _mm256_add_epi16(b_sum_hi, bottom_left_b_16_hi);
+        b_sum_hi = _mm256_add_epi16(b_sum_hi, bottom_b_16_hi);
+        b_sum_hi = _mm256_add_epi16(b_sum_hi, bottom_right_b_16_hi);
+
+        // Divide by 9 by approximating using the value 2^16 / 9 and then shifting 16
+
+        __m256i b_avg_lo = _mm256_mulhi_epu16(b_sum_lo, div9_magicnumber); // 7282 is 2^16/9
+        __m256i b_avg_hi = _mm256_mulhi_epu16(b_sum_hi, div9_magicnumber);
+
+        // Pack the 16-bit integers back to 8-bit integers AND shift down by 16 bits
+
+        __m256i b_avg =_mm256_packus_epi16(b_avg_lo, b_avg_hi);
+
+        // Store the blurred pixel values into the temporary image
+
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(temporary_image.red.data() + i), r_avg);
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(temporary_image.green.data() + i), g_avg);
+        _mm256_storeu_si256(reinterpret_cast<__m256i*>(temporary_image.blue.data() + i), b_avg);
+    
+        i += 32; // move to the next 32 pixels
+    }
+
     // top row
     for (int i = 0; i < image.width; i++){
         blur_pixel(image, temporary_image, i);
@@ -110,276 +321,5 @@ void filter_blur(IMAGE_DATA &image){
         blur_pixel(image, temporary_image, i);
     }
 
-    int i=image.width+1; // start at image index [1, 1] (from idx [0, 0])
-    while (i < (image.width*(image.height-1))-1) // end at image index [width-2, height-2] (from idx [width-1, height-1])
-    {
-        int col = i % image.width;
-        int row = i / image.width;
-        
-        if (col == 0 || col == image.width - 1) {
-            i++;
-            continue; // skip the first and last column
-        }
-
-        if ((col + 32) > (image.width)) {
-            // if the next 32 pixels would cross the row boundary, need to process the rest in scalar code
-            // was going to use col + 33 to stop it also doing the final column, but we can do it
-            // and then overwrite it later, potentially increasing performance
-            
-            for (int j = col; j < image.width - 1; j++) { // can skip the last column here, though. Makes no difference
-                blur_pixel(image, temporary_image, i + j); // call the blur pixel function to do the blur
-                i++;
-            }
-        }
-        
-    }
-
     image = temporary_image; // copy the temp image back into the original
 }
-
-/*
-void filter_blur(IMAGE_DATA &image){
-    // perform a 3x3 box blur filter using AVX2 intrinsics, but skipping the edge columns and rows so we can easily load in the 3x3 box without checking for bounds
-    // we can then do the edge parts later in separate loops following the basic method of box_blur I implemented before
-
-    IMAGE_DATA temporary_image = image; // create a temp image - we can't adjust the pixels in place since surrounding pixels still need the original values
-    
-    __m256i r_sum, g_sum, b_sum; // don't need a count since it's always 9 when in range when doing SIMD part
-
-    
-
-    int i=image.width + 1; // start at image index [1, 1] (from idx [0, 0])
-    while (i < (image.width * (image.height - 1))) {
-        int col = i % image.width; 
-        int row = i / image.width;
-
-        std::cout << "Image size: " << image.width << "x" << image.height << "\n";
-        std::cout << "Pixel " << i << "[" << row << ", " << col << "]\n";
-
-        // skip the first and last column
-        if (col == 0 || col == image.width - 1) {
-            i++;
-            continue;
-        }
-
-        // we need to make sure the SIMD code doesn't go across 2 rows, so we need to check if the column is close to the end of the row
-        if (col + 31 >= image.width - 1) {
-            for (int j = col; j < image.width - 1; j++) { // can skip the final column
-                int index  = (i / image.width) * image.width + j;
-                int r_sum = 0, g_sum = 0, b_sum = 0, c = 0; // reset the sums and count for each pixel
-                for (int k = -1; k <= 0; k++){
-                    for (int j = -1; j <= 1; j++){
-                        int x = index + j * image.width + k; // current pixel + row offset + column offset
-                        if (x >= 0 && x < image.width * image.height){
-                            if ((x/image.width) != (index / image.width)){
-                                continue; // if the pixel is not in the right row when it should be (a column offset error), skip it
-                            }
-                            r_sum += image.red[x];
-                            g_sum += image.green[x];
-                            b_sum += image.blue[x];
-                            c++;
-                        }
-                    }
-                }
-                temporary_image.red[index] = ((r_sum / c));
-                temporary_image.green[index] = ((g_sum / c));
-                temporary_image.blue[index] = ((b_sum / c));
-                i++;
-            }
-            continue;
-        }
-        
-
-        // Process the 32-pixel block (which fits) using SIMD
-
-        __m256i top_left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - image.width - 1));
-        __m256i top = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - image.width));
-        __m256i top_right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - image.width + 1));
-        __m256i left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i - 1));
-        __m256i center = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i));
-        __m256i right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + 1));
-        __m256i bottom_left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + image.width - 1));
-        __m256i bottom = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + image.width));
-        __m256i bottom_right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i + image.width + 1));
-
-        // Now we need to unpack the 8 bit integers to 16, so we can do the adding without overflowing
-        __m256i top_left_16 = _mm256_unpacklo_epi8(top_left, _mm256_setzero_si256());
-        __m256i top_16 = _mm256_unpacklo_epi8(top, _mm256_setzero_si256());
-        __m256i top_right_16 = _mm256_unpacklo_epi8(top_right, _mm256_setzero_si256());
-        __m256i left_16 = _mm256_unpacklo_epi8(left, _mm256_setzero_si256());
-        __m256i center_16 = _mm256_unpacklo_epi8(center, _mm256_setzero_si256());
-        __m256i right_16 = _mm256_unpacklo_epi8(right, _mm256_setzero_si256());
-        __m256i bottom_left_16 = _mm256_unpacklo_epi8(bottom_left, _mm256_setzero_si256());
-        __m256i bottom_16 = _mm256_unpacklo_epi8(bottom, _mm256_setzero_si256());
-        __m256i bottom_right_16 = _mm256_unpacklo_epi8(bottom_right, _mm256_setzero_si256());
-
-        // Next we can add them together
-        r_sum = _mm256_add_epi16(
-            _mm256_add_epi16(_mm256_add_epi16(top_left_16, top_16), _mm256_add_epi16(top_right_16, left_16)),
-            _mm256_add_epi16(_mm256_add_epi16(center_16, right_16), _mm256_add_epi16(bottom_left_16, bottom_16)));
-        r_sum = _mm256_add_epi16(r_sum, bottom_right_16);
-
-        // Now we need to divide by 9 - we can't use direct division (again) so will use multiplication + bit shifting instead (or just taking the right bits)
-        __m256i r_avg = _mm256_mulhi_epu16(r_sum, _mm256_set1_epi16(7282)); // 7282 is 2^16/9 and then takes the right bits to get 1/9
-        
-        // pack the 16 bit integers back to 8 bit integers
-        r_avg = _mm256_packus_epi16(r_avg, r_avg);
-
-        _mm256_storeu_si256(reinterpret_cast<__m256i*>(temporary_image.red.data() + i), r_avg); // store the result back to the temporary image
-    
-        // Repeat the same process for the green channel
-        top_left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - image.width - 1));
-        top = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - image.width));
-        top_right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - image.width + 1));
-        left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i - 1));
-        center = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i));
-        right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + 1));
-        bottom_left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + image.width - 1));
-        bottom = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + image.width));
-        bottom_right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i + image.width + 1));
-
-        // Unpack, sum, divide, and pack for the green channel
-        top_left_16 = _mm256_unpacklo_epi8(top_left, _mm256_setzero_si256());
-        top_16 = _mm256_unpacklo_epi8(top, _mm256_setzero_si256());
-        top_right_16 = _mm256_unpacklo_epi8(top_right, _mm256_setzero_si256());
-        left_16 = _mm256_unpacklo_epi8(left, _mm256_setzero_si256());
-        center_16 = _mm256_unpacklo_epi8(center, _mm256_setzero_si256());
-        right_16 = _mm256_unpacklo_epi8(right, _mm256_setzero_si256());
-        bottom_left_16 = _mm256_unpacklo_epi8(bottom_left, _mm256_setzero_si256());
-        bottom_16 = _mm256_unpacklo_epi8(bottom, _mm256_setzero_si256());
-        bottom_right_16 = _mm256_unpacklo_epi8(bottom_right, _mm256_setzero_si256());
-
-        g_sum = _mm256_add_epi16(
-            _mm256_add_epi16(_mm256_add_epi16(top_left_16, top_16), _mm256_add_epi16(top_right_16, left_16)),
-            _mm256_add_epi16(_mm256_add_epi16(center_16, right_16), _mm256_add_epi16(bottom_left_16, bottom_16)));
-        g_sum = _mm256_add_epi16(g_sum, bottom_right_16);
-
-        __m256i g_avg = _mm256_mulhi_epu16(g_sum, _mm256_set1_epi16(7282));
-        g_avg = _mm256_packus_epi16(g_avg, g_avg);
-        _mm256_storeu_si256(reinterpret_cast<__m256i*>(temporary_image.green.data() + i), g_avg);
-
-        // Repeat the same process for the blue channel
-        top_left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - image.width - 1));
-        top = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - image.width));
-        top_right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - image.width + 1));
-        left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i - 1));
-        center = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i));
-        right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + 1));
-        bottom_left = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + image.width - 1));
-        bottom = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + image.width));
-        bottom_right = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i + image.width + 1));
-
-        // Unpack, sum, divide, and pack for the blue channel
-        top_left_16 = _mm256_unpacklo_epi8(top_left, _mm256_setzero_si256());
-        top_16 = _mm256_unpacklo_epi8(top, _mm256_setzero_si256());
-        top_right_16 = _mm256_unpacklo_epi8(top_right, _mm256_setzero_si256());
-        left_16 = _mm256_unpacklo_epi8(left, _mm256_setzero_si256());
-        center_16 = _mm256_unpacklo_epi8(center, _mm256_setzero_si256());
-        right_16 = _mm256_unpacklo_epi8(right, _mm256_setzero_si256());
-        bottom_left_16 = _mm256_unpacklo_epi8(bottom_left, _mm256_setzero_si256());
-        bottom_16 = _mm256_unpacklo_epi8(bottom, _mm256_setzero_si256());
-        bottom_right_16 = _mm256_unpacklo_epi8(bottom_right, _mm256_setzero_si256());
-
-        b_sum = _mm256_add_epi16(
-            _mm256_add_epi16(_mm256_add_epi16(top_left_16, top_16), _mm256_add_epi16(top_right_16, left_16)),
-            _mm256_add_epi16(_mm256_add_epi16(center_16, right_16), _mm256_add_epi16(bottom_left_16, bottom_16)));
-        b_sum = _mm256_add_epi16(b_sum, bottom_right_16);
-
-        __m256i b_avg = _mm256_mulhi_epu16(b_sum, _mm256_set1_epi16(7282));
-        b_avg = _mm256_packus_epi16(b_avg, b_avg);
-        _mm256_storeu_si256(reinterpret_cast<__m256i*>(temporary_image.blue.data() + i), b_avg);
-
-        // Increment the pixels
-        i += 32; // move to the next block of 32 pixels
-    }
-
-    // Now, all 'central' pixels have been processed as quickly as possible in SIMD.
-    // We need to handle the edges with scalar code because they wont fit correctly otherwise
-
-    int c = 0, sr_sum = 0, sg_sum = 0, sb_sum = 0;
-    // top row
-    for (int i = 0; i < image.width; i++){
-        c = 0, sr_sum = 0, sg_sum = 0, sb_sum = 0; // reset the sums and count for each pixel
-        for (int j = 0; j <= 1; j++){
-            for (int k = -1; k <= 1; k++){
-                int x = i + j * image.width + k; // current pixel + row offset + column offset
-                if (x >= 0 && x < image.width * image.height){
-                    if ((x/image.width) != (i / image.width)){
-                        continue; // if the pixel is not in the right row when it should be (a column offset error), skip it
-                    }
-                    sr_sum += image.red[x];
-                    sg_sum += image.green[x];
-                    sb_sum += image.blue[x];
-                    c++;
-                }
-            }
-        }
-
-        temporary_image.red[i] = ((sr_sum / c) % 255);
-        temporary_image.green[i] = ((sg_sum / c) % 255);
-        temporary_image.blue[i] = ((sb_sum / c) % 255);
-    }
-    // bottom row
-    for (int i = image.width*(image.height-1); i < image.width*image.height; i++){
-        c = 0, sr_sum = 0, sg_sum = 0, sb_sum = 0; // reset the sums and count for each pixel
-        for (int j = -1; j <= 0; j++){
-            for (int k = -1; k <= 1; k++){
-                int x = i + j * image.width + k; // current pixel + row offset + column offset
-                if (x >= 0 && x < image.width * image.height){
-                    if ((x/image.width) != (i / image.width)){
-                        continue; // if the pixel is not in the right row when it should be (a column offset error), skip it
-                    }
-                    sr_sum += image.red[x];
-                    sg_sum += image.green[x];
-                    sb_sum += image.blue[x];
-                    c++;
-                }
-            }
-        }
-
-        temporary_image.red[i] = ((sr_sum / c) % 255);
-        temporary_image.green[i] = ((sg_sum / c) % 255);
-        temporary_image.blue[i] = ((sb_sum / c) % 255);
-    }
-    // left column
-    for (int i=image.width; i < image.height*image.width; i+=image.width){
-        c = 0, sr_sum = 0, sg_sum = 0, sb_sum = 0; // reset the sums and count for each pixel
-        for (int j = -1; j <= 1; j++){
-            for (int k = 0; k <= 1; k++){
-                int x = i + j * image.width + k; // current pixel + row offset + column offset
-                if (x >= 0 && x < image.width * image.height){
-                    sr_sum += image.red[x];
-                    sg_sum += image.green[x];
-                    sb_sum += image.blue[x];
-                    c++;
-                }
-            }
-        }
-
-        temporary_image.red[i] = ((sr_sum / c) % 255);
-        temporary_image.green[i] = ((sg_sum / c) % 255);
-        temporary_image.blue[i] = ((sb_sum / c) % 255);
-    }
-    // right column
-    for (int i=(2*image.width)-1; i < image.height*image.width-1; i+=image.width){
-        c = 0, sr_sum = 0, sg_sum = 0, sb_sum = 0; // reset the sums and count for each pixel
-        for (int j = -1; j <= 1; j++){
-            for (int k = -1; k <= 0; k++){
-                int x = i + j * image.width + k; // current pixel + row offset + column offset
-                if (x >= 0 && x < image.width * image.height){
-                    sr_sum += image.red[x];
-                    sg_sum += image.green[x];
-                    sb_sum += image.blue[x];
-                    c++;
-                }
-            }
-        }
-
-        temporary_image.red[i] = ((sr_sum / c) % 255);
-        temporary_image.green[i] = ((sg_sum / c) % 255);
-        temporary_image.blue[i] = ((sb_sum / c) % 255);
-    }
-
-    // now we need to copy everything back
-    image = temporary_image; // copy the temp image back into the original
-}   */

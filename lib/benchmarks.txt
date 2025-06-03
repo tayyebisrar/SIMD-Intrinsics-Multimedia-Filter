@@ -20,3 +20,20 @@ Elapsed time: 81.6916 seconds
 Successfully wrote to file with return code 1 using default intrinsics
 Elapsed time: 81.9533 seconds
 Successfully wrote to file with return code 1 using default intrinsics
+
+
+lena_color box-blur (100,000 iterations)
+
+Elapsed time: 1043.8 seconds
+Successfully wrote to file with return code 1 using default intrinsics
+Elapsed time: 1043.56 seconds
+Successfully wrote to file with return code 1 using default intrinsics
+Elapsed time: 1059.52 seconds.
+Successfully wrote to file with return code 1 using default intrinsics
+
+Elapsed time: 326.415 seconds.
+Successfully wrote to file with return code 1 using AVX2 intrinsics
+Elapsed time: 325.189 seconds.
+Successfully wrote to file with return code 1 using AVX2 intrinsics
+Elapsed time: 324.186 seconds.
+Successfully wrote to file with return code 1 using AVX2 intrinsics

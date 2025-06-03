@@ -11,7 +11,7 @@ In either case, the code should still compile, as this is simply visual.
 
 ## Features
 - Loads BMP images and extracts RGB channels separately.
-- Supports basic filtering operations (e.g., brightness, edge detection, grayscale, etc.).
+- Supports basic filtering operations (e.g., brightness, blurring, grayscale).
 - Outputs filtered images as BMP files.
 
 ## Benchmarks
@@ -23,6 +23,13 @@ For 100,000 iterations of grayscaled charizard.bmp:
 | Default           | 81.82                         | 1.00x                 |
 | SSE2              | 21.63                         | 3.78x                 |
 | AVX2              | 11.67                         | 7.02x                 |
+
+For 100,000 iterations of box-blurred lena_color.bmp:
+
+| Intrinsics        | Average Elapsed Time (seconds)| Speedup (vs Default)  |
+|-------------------|-------------------------------|-----------------------|
+| Default           | 1048.96                       | 1.00x                 |
+| AVX2              | 325.26                        | 3.21x                 |
 
 ## Dependencies
 - C++17 or later
@@ -51,15 +58,14 @@ Run the program:
 ```
 Available flags:
 - `g` - Convert to grayscale - Available for SSE2 and Default (Scalar)
+- `b` - Apply a blur filter
 
 Work In Progress flags:
-- `b` - Apply a blur filter
-- `e` - Apply edge detection
+- `l` - Increase/Decrease Brightness
 
 ## Future Improvements
 - Support for 4-channel images (RGBA)
 - Additional filter options
 - GUI integration for convenience
 - Sound and other photo formats, and later video filtering
-- Implementation of AVX2 and NEON
 - Add CMake configuration

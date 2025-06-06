@@ -37,3 +37,19 @@ Elapsed time: 325.189 seconds.
 Successfully wrote to file with return code 1 using AVX2 intrinsics
 Elapsed time: 324.186 seconds.
 Successfully wrote to file with return code 1 using AVX2 intrinsics
+
+lena_color 128 brightness increase (100,000 iterations)
+
+Elapsed time: 409.268 seconds.
+Successfully wrote to file with return code 1 using default intrinsics
+Elapsed time: 409.996 seconds.
+Successfully wrote to file with return code 1 using default intrinsics
+Elapsed time: 408.695 seconds.
+Successfully wrote to file with return code 1 using default intrinsics
+
+Elapsed time: 15.4549 seconds.
+Successfully wrote to file with return code 1 using AVX2 intrinsics
+Elapsed time: 15.2864 seconds.
+Successfully wrote to file with return code 1 using AVX2 intrinsics
+Elapsed time: 15.8861 seconds.
+Successfully wrote to file with return code 1 using AVX2 intrinsics

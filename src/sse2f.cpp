@@ -87,7 +87,7 @@ void filter_blur(IMAGE_DATA &image){
     }
 }
 
-void filter_brightness_basic(IMAGE_DATA &image, int brightness){
+void filter_brightness(IMAGE_DATA &image, int brightness){
     const int rbrightness = std::max(-255, std::min(255, brightness)); // clamp brightness to [-255, 255]
     for (int i = 0; i < image.width * image.height; i++){
         image.red[i] = static_cast<uint8_t>(std::max(0, std::min(255, image.red[i] + rbrightness))); // equivalent to std::clamp from 0 to 255

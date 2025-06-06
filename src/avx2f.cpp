@@ -323,3 +323,47 @@ void filter_blur(IMAGE_DATA &image){
 
     image = temporary_image; // copy the temp image back into the original
 }
+
+void filter_brightness(IMAGE_DATA &image, int brightness){
+    // Adjust brightness of all pixels by a given integer, leaving each pixel in range [0, 255]
+    const int totalpixels = image.width * image.height;
+    const int rbrightness = std::max(-255, std::min(255, brightness));
+    const __m256i brightness_vector = _mm256_set1_epi8(static_cast<uint8_t>(std::abs(rbrightness)));
+    if (rbrightness >= 0) {
+        for (int i = 0; i < totalpixels; i+=32) {
+            __m256i red = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i));
+            __m256i green = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i));
+            __m256i blue = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i));
+
+            red = _mm256_adds_epu8(red, brightness_vector);
+            green = _mm256_adds_epu8(green, brightness_vector);
+            blue = _mm256_adds_epu8(blue, brightness_vector);
+
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(image.red.data() + i), red);
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(image.green.data() + i), green);
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(image.blue.data() + i), blue);
+        }
+    } 
+    else {
+        for (int i = 0; i < totalpixels; i+=32){
+            __m256i red = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.red.data() + i));
+            __m256i green = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.green.data() + i));
+            __m256i blue = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(image.blue.data() + i));
+
+            red = _mm256_subs_epu8(red, brightness_vector);
+            green = _mm256_subs_epu8(green, brightness_vector);
+            blue = _mm256_subs_epu8(blue, brightness_vector);
+
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(image.red.data() + i), red);
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(image.green.data() + i), green);
+            _mm256_storeu_si256(reinterpret_cast<__m256i*>(image.blue.data() + i), blue);
+        }
+    }
+
+    // Remaining pixels (scalar)
+    for (int i = (totalpixels / 32 * 32); i < totalpixels; i++) {
+        image.red[i] = static_cast<uint8_t>(std::max(0, std::min(255, image.red[i] + rbrightness))); // equivalent to std::clamp from 0 to 255
+        image.green[i] = static_cast<uint8_t>(std::max(0, std::min(255, image.green[i] + rbrightness)));
+        image.blue[i] = static_cast<uint8_t>(std::max(0, std::min(255, image.blue[i] + rbrightness)));
+    }
+}

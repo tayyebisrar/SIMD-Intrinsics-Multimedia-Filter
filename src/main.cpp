@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     std::string infile = argv[2];
     std::string outfile = argv[3];
     char flag = argv[1][0];
-    if (!(flag == 'b' || flag == 'e' || flag == 'g')){
+    if (!(flag == 'b' || flag == 'l' || flag == 'g')){
         std::cerr << "Invalid filter." << std::endl;
         return 2;
     }
@@ -46,24 +46,27 @@ int main(int argc, char* argv[])
     }
     
     switch (flag) {
-        case 'b':
-            if (std::string(instrset) == "none"){
+        case 'b': // blur
+            if (std::string(instrset) == "none" || std::string(instrset) == "NEON"){
                 filter_blur_basic(in_image);
             }
             else {
-                if (std::string(instrset) == "AVX2"){
-                    filter_blur(in_image);
-                }
-                else{
-                    filter_blur_basic(in_image);
-                }
+                filter_blur(in_image);
             }
             break;
-        case 'e':
-            // filter_edge_basic(in_image);
+        case 'l': // brightness
+            int brightness;
+            std::cout << "Enter brightness adjustment value (positive or negative): ";
+            std::cin >> brightness;
+            if (std::string(instrset) == "none" || std::string(instrset) == "NEON"){
+                filter_brightness_basic(in_image, brightness);
+            }
+            else {
+                filter_brightness(in_image, brightness);
+            }
             break;
         case 'g':
-            if (std::string(instrset) == "none"){
+            if (std::string(instrset) == "none" || std::string(instrset) == "NEON"){
                 filter_grayscale_basic(in_image);
             }
             else {

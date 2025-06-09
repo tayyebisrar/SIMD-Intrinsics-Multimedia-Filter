@@ -31,6 +31,13 @@ Successfully wrote to file with return code 1 using default intrinsics
 Elapsed time: 1059.52 seconds.
 Successfully wrote to file with return code 1 using default intrinsics
 
+Elapsed time: 425.526 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
+Elapsed time: 424.416 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
+Elapsed time: 424.881 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
+
 Elapsed time: 326.415 seconds.
 Successfully wrote to file with return code 1 using AVX2 intrinsics
 Elapsed time: 325.189 seconds.
@@ -46,6 +53,13 @@ Elapsed time: 409.996 seconds.
 Successfully wrote to file with return code 1 using default intrinsics
 Elapsed time: 408.695 seconds.
 Successfully wrote to file with return code 1 using default intrinsics
+
+Elapsed time: 29.165 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
+Elapsed time: 30.8299 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
+Elapsed time: 30.8121 seconds
+Successfully wrote to file with return code 1 using SSE2 intrinsics
 
 Elapsed time: 15.4549 seconds.
 Successfully wrote to file with return code 1 using AVX2 intrinsics

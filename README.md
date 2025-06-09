@@ -29,6 +29,7 @@ For 100,000 iterations of box-blurred lena_color.bmp:
 | Intrinsics        | Average Elapsed Time (seconds)| Speedup (vs Default)  |
 |-------------------|-------------------------------|-----------------------|
 | Default           | 1048.96                       | 1.00x                 |
+| SSE2              | 424.941                       | 2.47x                 |
 | AVX2              | 325.26                        | 3.21x                 |
 
 For 100,000 iterations of 128-brightness increase lena_color.bmp:
@@ -36,6 +37,7 @@ For 100,000 iterations of 128-brightness increase lena_color.bmp:
 | Intrinsics        | Average Elapsed Time (seconds)| Speedup (vs Default)  |
 |-------------------|-------------------------------|-----------------------|
 | Default           | 409.320                       | 1.00x                 |
+| SSE2              | 30.269                        | 13.52x                |
 | AVX2              | 15.542                        | 26.34x                |
 
 - Measurements were taken on a desktop machine with minimal background processes.

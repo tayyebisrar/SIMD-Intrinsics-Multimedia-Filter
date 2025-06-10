@@ -4,11 +4,6 @@ This project implements image filtering operations using C/C++, with a focus on 
 
 Test image(s) can be found in lib/images
 
-**NOTE** - If you open the files with intrinsics for an architecture your computer _doesn't_ support, it may highlight it as an error/squiggle
-in some code editors/IDEs. If you prefer not to see these errors/squiggles, you can delete the files that don't
-match your architecture.
-In either case, the code should still compile, as this is simply visual.
-
 ## Features
 - Loads BMP images and extracts RGB channels separately.
 - Supports basic filtering operations (e.g., brightness, blurring, grayscale).
@@ -50,7 +45,7 @@ For 100,000 iterations of 128-brightness increase lena_color.bmp:
 
 ## Build & Usage
 ### Using Makefile
-To compile (default):
+To compile with SSE2 (default):
 ```sh
 make
 ```
@@ -60,13 +55,13 @@ make use_avx2=1
 ```
 ### Manual Compilation
 Similar to Makefile,
-On x86, run:
+For SSE2, run:
 ```sh
 g++ -Iinclude -o filter src/main.cpp src/helpers.cpp src/defaultf.cpp src/sse2f.cpp -w
 ```
-On ARM, run:
+For AVX2, run:
 ```sh
-g++ -Iinclude -o filter src/main.cpp src/helpers.cpp src/defaultf.cpp -w -mfpu=neon
+g++ -Iinclude -o -mavx2 filter src/main.cpp src/helpers.cpp src/defaultf.cpp src/avx2f.cpp -w
 ```
 ### Running
 Run the program:
@@ -80,7 +75,5 @@ Available flags:
 
 ## Future Improvements
 - Support for 4-channel images (RGBA)
-- Support for ARM chips (NEON Intrinsics)
 - GUI integration for convenience
-- Sound and other photo formats, and later video filtering
 - CMake configuration

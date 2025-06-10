@@ -6,15 +6,13 @@
 #include <chrono>
 #include "helpers.h"
 #include "defaultf.h"
+
 #if defined(__AVX2__)
     #define instrset "AVX2"
     #include "avx2f.h"
 #elif defined(__SSE2__)
     #define instrset "SSE2"
     #include "sse2f.h"
-#elif defined(__ARM_NEON)
-    #define instrset "NEON"
-    #include "neonf.h"
 #else
     #define instrset "none"
 #endif
@@ -47,7 +45,7 @@ int main(int argc, char* argv[])
     
     switch (flag) {
         case 'b': // blur
-            if (std::string(instrset) == "none" || std::string(instrset) == "NEON"){
+            if (std::string(instrset) == "none"){
                 filter_blur_basic(in_image);
             }
             else {
@@ -58,7 +56,7 @@ int main(int argc, char* argv[])
             int brightness;
             std::cout << "Enter brightness adjustment value (positive or negative): ";
             std::cin >> brightness;
-            if (std::string(instrset) == "none" || std::string(instrset) == "NEON"){
+            if (std::string(instrset) == "none"){
                 filter_brightness_basic(in_image, brightness);
             }
             else {
@@ -66,7 +64,7 @@ int main(int argc, char* argv[])
             }
             break;
         case 'g':
-            if (std::string(instrset) == "none" || std::string(instrset) == "NEON"){
+            if (std::string(instrset) == "none"){
                 filter_grayscale_basic(in_image);
             }
             else {
